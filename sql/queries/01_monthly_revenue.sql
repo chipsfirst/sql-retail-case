@@ -1,9 +1,9 @@
 -- Вопрос: как менялась выручка по месяцам и каков темп роста месяц к месяцу?
--- Учитываются только оплаченные заказы (v_paid_order_totals).
+-- Только оплаченные заказы; декабрь 2011 обрезан (данные до 9 декабря).
 WITH monthly AS (
-    SELECT date_trunc('month', order_ts)::date AS month,
-           COUNT(*)                          AS orders,
-           SUM(revenue)                      AS revenue
+    SELECT date_trunc('month', invoice_ts)::date AS month,
+           COUNT(*)                             AS orders,
+           SUM(revenue)                         AS revenue
     FROM v_paid_order_totals
     GROUP BY 1
 )

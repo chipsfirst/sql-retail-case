@@ -1,13 +1,14 @@
 -- Вопрос: сколько клиентов не покупали 90 дней и сколько денег с ними связано?
 WITH bounds AS (
-    SELECT MAX(order_ts)::date AS max_date FROM v_paid_order_totals
+    SELECT MAX(invoice_ts)::date AS max_date FROM v_paid_order_totals
 ),
 last_order AS (
     SELECT customer_id,
-           MAX(order_ts)::date AS last_date,
-           COUNT(*)            AS orders,
-           SUM(revenue)        AS lifetime_revenue
+           MAX(invoice_ts)::date AS last_date,
+           COUNT(*)              AS orders,
+           SUM(revenue)          AS lifetime_revenue
     FROM v_paid_order_totals
+    WHERE customer_id IS NOT NULL
     GROUP BY 1
 )
 SELECT COUNT(*) AS customers,

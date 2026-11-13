@@ -1,7 +1,12 @@
-.PHONY: data db load queries reset
+.PHONY: data download prepare db load queries reset
 
-data:
-	python3 scripts/generate_data.py
+data: download prepare
+
+download:
+	python3 scripts/download_data.py
+
+prepare:
+	python3 scripts/prepare_data.py
 
 db:
 	docker compose up -d

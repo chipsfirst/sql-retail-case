@@ -1,10 +1,11 @@
 -- Вопрос: как долго живут клиенты от первой до последней покупки?
 WITH spans AS (
     SELECT customer_id,
-           MIN(order_ts)::date AS first_order,
-           MAX(order_ts)::date AS last_order,
-           COUNT(*)            AS orders
+           MIN(invoice_ts)::date AS first_order,
+           MAX(invoice_ts)::date AS last_order,
+           COUNT(*)              AS orders
     FROM v_paid_order_totals
+    WHERE customer_id IS NOT NULL
     GROUP BY 1
 )
 SELECT CASE

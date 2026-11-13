@@ -1,28 +1,26 @@
 -- Вопрос: какая доля товаров даёт основную выручку (правило Парето)?
 WITH by_product AS (
-    SELECT p.product_id,
-           p.name,
-           p.category,
-           SUM(i.quantity * i.unit_price * (1 - i.discount)) AS revenue
+    SELECT p.stock_code,
+           p.description,
+           SUM(i.quantity * i.unit_price) AS revenue
     FROM order_items i
-    JOIN orders o   USING (order_id)
-    JOIN products p USING (product_id)
+    JOIN orders o   USING (invoice_no)
+    JOIN products p USING (stock_code)
     WHERE o.status = 'paid'
-    GROUP BY 1, 2, 3
+    GROUP BY 1, 2
 ),
 ranked AS (
     SELECT *,
-           ROW_NUMBER() OVER (ORDER BY revenue DESC, product_id) AS rn,
-           SUM(revenue) OVER (ORDER BY revenue DESC, product_id) AS cumulative_revenue,
+           ROW_NUMBER() OVER (ORDER BY revenue DESC, stock_code) AS rn,
+           SUM(revenue) OVER (ORDER BY revenue DESC, stock_code) AS cumulative_revenue,
            SUM(revenue) OVER ()                                  AS total_revenue,
            COUNT(*) OVER ()                                      AS total_products
     FROM by_product
 )
 SELECT rn,
-       name,
-       category,
+       description,
        revenue,
-       ROUND(cumulative_revenue / total_revenue * 100, 1) AS cumulative_share_pct
+       ROUND(cumulative_revenue / total_revenue * 100, 2) AS cumulative_share_pct
 FROM ranked
 WHERE rn <= 10
 ORDER BY rn;

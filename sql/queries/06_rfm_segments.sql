@@ -1,14 +1,15 @@
 -- Вопрос: на какие сегменты делятся клиенты по давности, частоте и деньгам?
 -- R: 1 — покупал давно, 5 — недавно. F и M: 5 — максимум.
 WITH bounds AS (
-    SELECT MAX(order_ts)::date AS max_date FROM v_paid_order_totals
+    SELECT MAX(invoice_ts)::date AS max_date FROM v_paid_order_totals
 ),
 rfm AS (
     SELECT t.customer_id,
-           (SELECT max_date FROM bounds) - MAX(t.order_ts)::date AS recency_days,
-           COUNT(*)                                             AS frequency,
-           SUM(t.revenue)                                       AS monetary
+           (SELECT max_date FROM bounds) - MAX(t.invoice_ts)::date AS recency_days,
+           COUNT(*)                                               AS frequency,
+           SUM(t.revenue)                                         AS monetary
     FROM v_paid_order_totals t
+    WHERE t.customer_id IS NOT NULL
     GROUP BY t.customer_id
 ),
 scored AS (
