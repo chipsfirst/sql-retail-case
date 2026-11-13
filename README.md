@@ -1,5 +1,10 @@
 # SQL-кейс: интернет-магазин на PostgreSQL
 
+## Summary (EN)
+
+A PostgreSQL analytics case on the Online Retail II dataset (Kaggle, CC0): 1.07M raw rows cleaned into 46,907 orders and 39,513 paid invoices. Twelve queries cover revenue growth, country mix, cohort retention, RFM, Pareto and churn; schema, cleaning rules and queries are covered by tests.
+
+
 Аналитика реального датасета розничных продаж: схема из четырёх таблиц, подготовка данных и 12 аналитических запросов на PostgreSQL 16 — от выручки по месяцам до когортного удержания, RFM и правила Парето.
 
 **Данные:** [Online Retail II](https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) (Kaggle, лицензия CC0 1.0). Это выгрузка заказов британского оптового продавца подарков и товаров для дома за декабрь 2009 — декабрь 2011: 1 067 371 строка, 43 страны, реальные возвраты, отмены и гостевые заказы.
