@@ -27,21 +27,33 @@ RAW = os.path.join(DATA, 'online_retail_II.csv')
 
 PRODUCT_CODE = r'^\d{5}[A-Za-z]?$'
 
+RAW_COLUMNS = ['Invoice', 'StockCode', 'Description', 'Quantity',
+               'InvoiceDate', 'Price', 'Customer ID', 'Country']
 
-def main():
-    raw = pd.read_csv(RAW, dtype={'Customer ID': 'Int64'})
-    raw['StockCode'] = raw['StockCode'].astype(str)
-    raw['Invoice'] = raw['Invoice'].astype(str)
-    print(f'исходных строк: {len(raw):,}')
 
-    frame = raw[raw['StockCode'].str.match(PRODUCT_CODE)
-                & (raw['Price'] > 0)
-                & (raw['Quantity'] != 0)].copy()
-    frame['status'] = frame['Invoice'].str.startswith('C').map({True: 'cancelled', False: 'paid'})
+def clean_frame(raw):
+    """Применяет правила 1–5 и возвращает очищенный кадр с выручкой."""
+    missing = [column for column in RAW_COLUMNS if column not in raw.columns]
+    if missing:
+        raise ValueError(f'нет обязательных колонок: {missing}')
+
+    frame = raw.copy()
+    frame['StockCode'] = frame['StockCode'].astype(str)
+    frame['Invoice'] = frame['Invoice'].astype(str)
+    frame['InvoiceDate'] = pd.to_datetime(frame['InvoiceDate'])
+
+    frame = frame[frame['StockCode'].str.match(PRODUCT_CODE)
+                  & (frame['Price'] > 0)
+                  & (frame['Quantity'] != 0)].copy()
+    frame['status'] = frame['Invoice'].str.startswith('C').map(
+        {True: 'cancelled', False: 'paid'})
     frame = frame[(frame['status'] == 'cancelled') | (frame['Quantity'] > 0)]
-    print(f'после фильтра товаров, цен и количеств: {len(frame):,}')
-
     frame['revenue'] = frame['Quantity'] * frame['Price']
+    return frame
+
+
+def build_tables(frame):
+    """Собирает четыре таблицы для PostgreSQL из очищенного кадра."""
     grouped = (frame.groupby(['Invoice', 'StockCode', 'status'], as_index=False)
                .agg(quantity=('Quantity', 'sum'),
                     revenue=('revenue', 'sum'),
@@ -50,7 +62,6 @@ def main():
                     invoice_ts=('InvoiceDate', 'min'),
                     country=('Country', 'first')))
     grouped['unit_price'] = (grouped['revenue'] / grouped['quantity']).round(2)
-    print(f'после агрегации строк заказа: {len(grouped):,}')
 
     orders = (grouped.groupby('Invoice', as_index=False)
               .agg(customer_id=('customer_id', 'max'),
@@ -93,16 +104,36 @@ def main():
     customers['first_order_ts'] = customers['first_order_ts'].dt.strftime('%Y-%m-%d %H:%M:%S')
     customers['last_order_ts'] = customers['last_order_ts'].dt.strftime('%Y-%m-%d %H:%M:%S')
 
-    orders_out.to_csv(os.path.join(DATA, 'orders.csv'), index=False)
-    items.to_csv(os.path.join(DATA, 'order_items.csv'), index=False)
-    customers.to_csv(os.path.join(DATA, 'customers.csv'), index=False)
-    products.to_csv(os.path.join(DATA, 'products.csv'), index=False)
+    return {
+        'orders': orders_out,
+        'order_items': items,
+        'customers': customers,
+        'products': products,
+    }
 
-    revenue = (grouped.loc[grouped['status'] == 'paid', 'revenue'].sum())
-    print(f'заказов: {len(orders_out):,} (оплаченных {len(paid):,})')
-    print(f'позиций: {len(items):,}')
-    print(f'клиентов с ID: {len(customers):,}')
-    print(f'товаров: {len(products):,}')
+
+def write_tables(tables, data_dir):
+    for name, table in tables.items():
+        table.to_csv(os.path.join(data_dir, f'{name}.csv'), index=False)
+
+
+def main():
+    raw = pd.read_csv(RAW, dtype={'Customer ID': 'Int64'})
+    print(f'исходных строк: {len(raw):,}')
+
+    frame = clean_frame(raw)
+    print(f'после фильтра товаров, цен и количеств: {len(frame):,}')
+
+    tables = build_tables(frame)
+    print(f'после агрегации строк заказа: {len(tables["order_items"]):,}')
+    write_tables(tables, DATA)
+
+    revenue = (frame.loc[frame['status'] == 'paid', 'revenue'].sum())
+    paid_orders = int((tables['orders']['status'] == 'paid').sum())
+    print(f'заказов: {len(tables["orders"]):,} (оплаченных {paid_orders:,})')
+    print(f'позиций: {len(tables["order_items"]):,}')
+    print(f'клиентов с ID: {len(tables["customers"]):,}')
+    print(f'товаров: {len(tables["products"]):,}')
     print(f'выручка по оплаченным заказам: {revenue:,.2f}')
 
 

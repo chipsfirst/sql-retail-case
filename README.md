@@ -211,3 +211,18 @@ psql -d shop -f sql/queries/01_monthly_revenue.sql
 ## Лицензия
 
 Код и материалы — [MIT](LICENSE). Данные принадлежат источнику: [Online Retail II](https://www.kaggle.com/datasets/mashlyn/online-retail-ii-uci) — CC0 1.0 (Kaggle).
+
+## Тесты
+
+```bash
+pip install pytest
+pytest -q
+```
+
+Тесты подготовки данных работают без базы. Проверка запросов включается, если задан PostgreSQL:
+
+```bash
+PGHOST=localhost PGUSER=shop PGPASSWORD=shop PGDATABASE=shop pytest -q
+```
+
+Тесты создают схему, загружают маленький фикстурный набор и выполняют все 12 запросов.
