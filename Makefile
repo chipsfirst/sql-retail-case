@@ -1,4 +1,4 @@
-.PHONY: data download prepare db load queries reset
+.PHONY: data download prepare db load queries test reset
 
 data: download prepare
 
@@ -15,6 +15,9 @@ db:
 load: db
 	docker compose exec -T -w /workspace db psql -U shop -d shop -v ON_ERROR_STOP=1 -f sql/schema.sql
 	docker compose exec -T -w /workspace db psql -U shop -d shop -v ON_ERROR_STOP=1 -f sql/load.sql
+
+test:
+	pytest -q
 
 queries:
 	@for f in sql/queries/*.sql; do echo "--- $$f"; docker compose exec -T -w /workspace db psql -U shop -d shop -f "$$f"; done

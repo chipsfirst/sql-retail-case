@@ -220,7 +220,7 @@ psql -d shop -f sql/queries/01_monthly_revenue.sql
 ## Тесты
 
 ```bash
-pip install pytest
+pip install -r requirements-dev.txt
 pytest -q
 ```
 
